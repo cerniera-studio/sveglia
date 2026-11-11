@@ -33,6 +33,8 @@ class ClockView(ctx: Context) : View(ctx) {
     /** Dims the time at night, from 0.15 (a dark room) to 1. */
     var dim = 1f
         set(v) { field = v.coerceIn(0.15f, 1f); invalidate() }
+    /** False for a small preview of the sky alone. */
+    var showTime = true
     /** While ringing: a slow breath of light around the sun. */
     var breathing = false
 
@@ -77,6 +79,7 @@ class ClockView(ctx: Context) : View(ctx) {
             if (breathing) postInvalidateDelayed(40)
         }
 
+        if (!showTime) return
         // The time, in a colour that reads on whatever the sky has become
         val lum = luminance(top)
         val ink = if (lum > 0.45f) 0xFF1D1B19.toInt() else 0xFFF6F1E6.toInt()

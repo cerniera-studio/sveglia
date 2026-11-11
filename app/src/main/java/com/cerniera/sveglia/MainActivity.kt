@@ -72,7 +72,7 @@ class MainActivity : Activity() {
         words.addView(text(next?.let { Alarm.until(now, it.ring) + (it.dawnStart?.let { d -> " · dawn from %02d:%02d".format(d.hour, d.minute) } ?: "") } ?: "No alarms set",
             14f, Kit.MUTED).apply { tag = SECONDARY })
         hero.addView(words, LinearLayout.LayoutParams(0, -2, 1f))
-        hero.addView(ClockView(this).apply { dawn = 0.55f; background = rounded(0, px(18).toFloat()); clipToOutline = true; outlineProvider = android.view.ViewOutlineProvider.BACKGROUND },
+        hero.addView(ClockView(this).apply { dawn = 0.55f; showTime = false; background = rounded(0, px(18).toFloat()); clipToOutline = true; outlineProvider = android.view.ViewOutlineProvider.BACKGROUND },
             LinearLayout.LayoutParams(px(88), px(116)))
         s.add(hero, px(22))
 
@@ -185,7 +185,7 @@ class MainActivity : Activity() {
 
     private fun soundName(uri: String?): String =
         runCatching { RingtoneManager.getRingtone(this, uri?.let(Uri::parse) ?: RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)).getTitle(this) }.getOrNull()
-            ?.let { if (uri == null) "Default · $it" else it } ?: "Default alarm sound"
+            ?: "The phone's alarm sound"
 
     @Deprecated("A one-off pick")
     override fun onActivityResult(req: Int, res: Int, data: Intent?) {
