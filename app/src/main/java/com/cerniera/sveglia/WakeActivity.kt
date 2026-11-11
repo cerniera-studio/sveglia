@@ -61,11 +61,10 @@ class WakeActivity : Activity(), Hinge.Listener {
             addView(clock, FrameLayout.LayoutParams(-1, -1))
             addView(controls, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = px(56) })
         })
-        // Only once there is a window: hide the bars for a full-screen sky
-        window.insetsController?.let {
-            it.hide(WindowInsets.Type.systemBars())
-            it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
+        // The sky runs behind transparent bars. Hiding them would make Android's one-time
+        // "viewing full screen" hint swallow the first tap, which here is the snooze.
+        window.setDecorFitsSystemWindows(false)
+        window.statusBarColor = 0; window.navigationBarColor = 0
         clock.setOnTouchListener { _, e -> if (e.actionMasked == MotionEvent.ACTION_UP) tapped(); true }
     }
 
