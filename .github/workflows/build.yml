@@ -85,3 +85,13 @@ jobs:
           path: |
             shot-*.png
             app-log.txt
+
+      - name: Attach screenshots to the release
+        if: always() && github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          target_commitish: ${{ github.sha }}
+          files: |
+            shot-*.png
+            app-log.txt
