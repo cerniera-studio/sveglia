@@ -1,7 +1,7 @@
 # Sveglia
 
 An alarm clock and bedside clock for the Galaxy Z Fold 8 Ultra, built on Cerniera's
-[Kit](https://github.com/cerniera/kit) to the Bellezza Necessaria mandate.
+[Kit](https://github.com/cerniera-studio/kit) to the Bellezza Necessaria mandate.
 
 - **Dawn first, sound second.** Up to 30 minutes before the alarm, the wake screen rises like a sunrise:
   the sky warms from the horizon and the sun climbs out of the hinge (from the foot of the cover screen,
