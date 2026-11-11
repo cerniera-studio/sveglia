@@ -67,7 +67,8 @@ class ClockView(ctx: Context) : View(ctx) {
             val wide = Hinge.unfolded(context)
             val cx = w / 2f
             val r = minOf(w, h) * (if (wide) 0.09f else 0.14f)
-            val cy = h + r * 1.2f - (h * 0.66f + r * 1.2f) * Kit.ease.getInterpolation(dawn)
+            // It climbs to just over a third of the way up, always below the time
+            val cy = h + r * 1.2f - (h * 0.36f + r * 1.2f) * Kit.ease.getInterpolation(dawn)
             val breath = if (breathing) 1f + 0.08f * sin((System.currentTimeMillis() - startedAt) / 900.0).toFloat() else 1f
             val glowR = r * (3.2f + 1.6f * dawn) * breath
             val sunC = blend(0xFFB8141E.toInt(), 0xFFFFF4E0.toInt(), Kit.ease.getInterpolation(dawn))
@@ -90,7 +91,7 @@ class ClockView(ctx: Context) : View(ctx) {
         p.typeface = Kit.display(context)
         p.textAlign = Paint.Align.CENTER
         p.textSize = minOf(w * 0.30f, h * 0.24f)
-        val y = h * 0.40f + dy
+        val y = h * 0.30f + dy
         c.drawText(LocalTime.now().format(fmt), w / 2f + dx, y, p)
         if (caption.isNotEmpty()) {
             p.typeface = Kit.sans(context, 450)

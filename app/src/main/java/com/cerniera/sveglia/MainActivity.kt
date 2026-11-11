@@ -137,7 +137,11 @@ class MainActivity : Activity() {
         val days = start.days.toMutableSet()
         var dawn = start.dawn
         var sound = start.sound
-        editing = Sheet.show(this, if (a == null) "New alarm" else "Alarm", onClose = { editing = null }) { sh ->
+        lateinit var label: android.widget.EditText
+        editing = Sheet.show(this, if (a == null) "New alarm" else "Alarm", onClose = { editing = null }, action = "Save" to { sh ->
+            Alarms.put(this, Alarm(start.id, hour, minute, days.toSet(), label.text.toString().trim(), dawn, true, sound))
+            sh.dismiss(); render()
+        }) { sh ->
             sh.body.addView(TimeDial(this, hour, minute) { h, m -> hour = h; minute = m })
 
             // Days: seven small rounds, champagne when chosen. None chosen means once.
@@ -161,7 +165,7 @@ class MainActivity : Activity() {
             sh.body.addView(Segmented(this, listOf("None", "10 min", "20 min", "30 min"), dawns.indexOf(dawn).coerceAtLeast(0)) { dawn = dawns[it] },
                 LinearLayout.LayoutParams(-1, -2).apply { topMargin = px(6) })
 
-            val label = field("Label (optional)", start.label)
+            label = field("Label (optional)", start.label)
             sh.body.addView(label, LinearLayout.LayoutParams(-1, -2).apply { topMargin = px(14) })
 
             val soundRow = Row(this, "Sound", soundName(sound), endValue("›")) {
@@ -174,10 +178,6 @@ class MainActivity : Activity() {
             pickedSound = { picked -> sound = picked; soundRow.setSub(soundName(picked)) }
             sh.body.addView(soundRow)
 
-            sh.body.addView(primary("Save") {
-                Alarms.put(this, Alarm(start.id, hour, minute, days.toSet(), label.text.toString().trim(), dawn, true, sound))
-                sh.dismiss(); render()
-            }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = px(14) })
             if (a != null) sh.body.addView(primary("Delete", filled = false) { Alarms.remove(this, a.id); sh.dismiss(); render() },
                 LinearLayout.LayoutParams(-1, -2).apply { topMargin = px(10) })
         }
