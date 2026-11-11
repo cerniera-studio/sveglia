@@ -42,10 +42,6 @@ class WakeActivity : Activity(), Hinge.Listener {
         setShowWhenLocked(true)
         setTurnScreenOn(true)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
-        window.insetsController?.let {
-            it.hide(WindowInsets.Type.systemBars())
-            it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
         wide = Hinge.unfolded(this)
         hinge = Hinge(this, this)
 
@@ -65,6 +61,11 @@ class WakeActivity : Activity(), Hinge.Listener {
             addView(clock, FrameLayout.LayoutParams(-1, -1))
             addView(controls, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = px(56) })
         })
+        // Only once there is a window: hide the bars for a full-screen sky
+        window.insetsController?.let {
+            it.hide(WindowInsets.Type.systemBars())
+            it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
         clock.setOnTouchListener { _, e -> if (e.actionMasked == MotionEvent.ACTION_UP) tapped(); true }
     }
 

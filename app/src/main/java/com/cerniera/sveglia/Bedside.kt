@@ -32,10 +32,6 @@ class BedsideActivity : Activity(), SensorEventListener {
         super.onCreate(saved)
         window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
         setShowWhenLocked(true)
-        window.insetsController?.let {
-            it.hide(WindowInsets.Type.systemBars())
-            it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
-        }
         clock = ClockView(this)
         val done = text("Done", 16f, 0xFFF6F1E6.toInt(), 500).apply {
             setPadding(px(26), px(14), px(26), px(14)); background = rounded(0x22F6F1E6, px(26).toFloat()); alpha = 0f
@@ -45,6 +41,11 @@ class BedsideActivity : Activity(), SensorEventListener {
             addView(clock, FrameLayout.LayoutParams(-1, -1))
             addView(done, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = px(48) })
         })
+        // Only once there is a window: hide the bars for a full-screen sky
+        window.insetsController?.let {
+            it.hide(WindowInsets.Type.systemBars())
+            it.systemBarsBehavior = WindowInsetsController.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE
+        }
         clock.setOnClickListener {
             done.animate().alpha(1f).setDuration(Kit.QUICK).start()
             done.postDelayed({ done.animate().alpha(0f).setDuration(Kit.SETTLE).start() }, Kit.RECEDE_MS)
