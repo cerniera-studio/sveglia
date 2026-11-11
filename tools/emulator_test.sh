@@ -19,16 +19,14 @@ adb shell input swipe 300 1000 300 700 200; sleep 1.5; shot new-alarm-turned
 adb shell input swipe 540 1900 540 600 300; sleep 1; shot new-alarm-scrolled
 tap_text "Save"; sleep 2; shot home-with-alarm
 
-# The bedside clock, opened from its row
-adb shell input swipe 540 1800 540 600 300; sleep 1
-tap_text "Bedside clock"; sleep 4; shot bedside
+# The bedside clock
+adb shell am start -n $PKG/.MainActivity --es open bedside; sleep 4; shot bedside
 adb shell input tap 540 1200; sleep 1; shot bedside-touched
 adb shell input keyevent KEYCODE_BACK; sleep 1
 
 # The dawn and the ring, previewed: part way through the dawn, ringing, then snoozed
-adb shell am start -n $PKG/.MainActivity; sleep 2
-adb shell input swipe 540 1800 540 600 300; sleep 1
-tap_text "Try the dawn"
+adb shell am force-stop $PKG
+adb shell am start -n $PKG/.MainActivity --es open preview
 sleep 12; shot dawn-early
 sleep 12; shot dawn-late
 sleep 9; shot ringing
@@ -37,8 +35,8 @@ adb shell input tap 540 1000; sleep 3; shot after-snooze
 # The main screen's shape: the list, then the dawn up the crease
 adb shell wm size 2256x2504; sleep 3
 adb shell am start -n $PKG/.MainActivity; sleep 3; shot home-unfolded
-adb shell input swipe 1100 2200 1100 600 300; sleep 1
-tap_text "Try the dawn"
+adb shell am force-stop $PKG
+adb shell am start -n $PKG/.MainActivity --es open preview
 sleep 20; shot dawn-unfolded
 sleep 12; shot ringing-unfolded
 adb shell input tap 1128 1250; sleep 3

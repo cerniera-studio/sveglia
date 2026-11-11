@@ -46,6 +46,11 @@ class MainActivity : Activity() {
         if (Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED)
             requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
         render()
+        // For the emulator walk-through: open straight into the dawn preview or the bedside clock
+        when (intent?.getStringExtra("open")) {
+            "preview" -> startForegroundService(Intent(this, RingService::class.java).setAction(RingService.PREVIEW))
+            "bedside" -> startActivity(Intent(this, BedsideActivity::class.java))
+        }
     }
 
     /** Coming back from a picker leaves an open sheet as it was. */
