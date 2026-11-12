@@ -1,11 +1,21 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 108 x 108 canvas; the glyph stays inside the 66dp safe zone (21 to 87) -->
+<!-- Sveglia: the sun half-risen over the hinge line, its rim an arc, three rays above.
+     Ivory line work, one champagne element: the family icon style (see Fold Widgets, Cielo). -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
-    android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <!-- The sun half-risen over the hinge, with two rays: dawn, from the fold -->
-    <path android:fillColor="#D9BB86" android:pathData="M34,62a20,20 0 0 1 40,0z" />
-    <path android:fillColor="#D9BB86" android:pathData="M26,66h56v5h-56z" />
-    <path android:fillColor="#D9BB86" android:pathData="M51.5,26h5v10h-5z" />
-    <path android:fillColor="#D9BB86" android:pathData="M27.4,37.6l3.5,-3.5l7.1,7.1l-3.5,3.5z" />
-    <path android:fillColor="#D9BB86" android:pathData="M80.6,37.6l-3.5,-3.5l-7.1,7.1l3.5,3.5z" />
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="108dp" android:height="108dp"
+    android:viewportWidth="108" android:viewportHeight="108">
+    <path android:fillColor="#00000000" android:strokeColor="#FFF6F1E6" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M31,67h46"/>
+    <path android:fillColor="#00000000" android:strokeColor="#FFF6F1E6" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M39,67a15,15 0 0 1 30,0"/>
+    <path android:fillColor="#00000000" android:strokeColor="#FFF6F1E6" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M54,37v7"/>
+    <path android:fillColor="#00000000" android:strokeColor="#FFF6F1E6" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M36.7,44.2l4.9,4.9"/>
+    <path android:fillColor="#00000000" android:strokeColor="#FFF6F1E6" android:strokeWidth="1.8" android:strokeLineCap="round" android:strokeLineJoin="round" android:pathData="M71.3,44.2l-4.9,4.9"/>
+    <path android:pathData="M49,67a5,5 0 0 1 10,0z">
+        <aapt:attr name="android:fillColor">
+            <gradient android:type="linear" android:startX="44" android:startY="40" android:endX="64" android:endY="70">
+                <item android:offset="0" android:color="#FFF7E6C2"/>
+                <item android:offset="1" android:color="#FFB8995F"/>
+            </gradient>
+        </aapt:attr>
+    </path>
 </vector>
