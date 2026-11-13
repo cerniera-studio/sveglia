@@ -53,13 +53,16 @@ for s in "cover-portrait 823x1920 320 0" "cover-landscape 823x1920 320 1" "main-
   # The emulator sometimes ignores a rotation: ask again until the screen really is the right way round
   want=$([ "$4" = 0 ] && echo 0 || echo 1)
   for try in 1 2 3; do
-    turned=$(adb shell run-as $PKG cat files/layout.json 2>/dev/null | python3 -c "import sys,json;v=json.load(sys.stdin)['view'];print(int(v[0]>v[1]))" 2>/dev/null)
+    # The display's own rotation, as the app saw it (the main screen is nearly square, so the
+    # view's proportions can't tell upright from turned)
+    turned=$(adb shell run-as $PKG cat files/layout.json 2>/dev/null | python3 -c "import sys,json;print(int(json.load(sys.stdin)['rotation'] % 2))" 2>/dev/null)
     [ "$turned" = "$want" ] && break
     echo "rotation not applied (try $try), asking again"
     adb shell settings put system user_rotation 0; sleep 1; adb shell settings put system user_rotation "$4"; sleep 3
     open_list
   done
   [ "$turned" = "$want" ] || echo "::error::$name: the screen never turned" | tee -a shapes.txt
+  sleep 1
   adb exec-out screencap -p > "shot-shape-$name-list.png"
   check "Alarms, $name" | tee -a shapes.txt
 

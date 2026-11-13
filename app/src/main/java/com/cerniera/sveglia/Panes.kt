@@ -55,7 +55,8 @@ class Panes(private val a: Activity, val screen: Screen) {
                 val inset = root.rootWindowInsets?.getInsets(WindowInsets.Type.systemBars())
                 val o = IntArray(2).also { root.getLocationInWindow(it) }
                 val boxes = parts.entries.filter { it.value != null && it.value!!.height > 0 }.joinToString(", ") { "\"${it.key}\": ${box(it.value!!)}" }
-                val json = "{\"wide\": $wide, \"origin\": [${o[0]}, ${o[1]}], \"view\": [${root.width}, ${root.height}], " +
+                val turn = a.display?.rotation ?: 0
+                val json = "{\"wide\": $wide, \"rotation\": $turn, \"origin\": [${o[0]}, ${o[1]}], \"view\": [${root.width}, ${root.height}], " +
                     "\"insets\": [${inset?.left ?: 0}, ${inset?.top ?: 0}, ${inset?.right ?: 0}, ${inset?.bottom ?: 0}], \"parts\": {$boxes}}"
                 runCatching { java.io.File(a.filesDir, "layout.json").writeText(json) }
             }
