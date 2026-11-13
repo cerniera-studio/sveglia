@@ -19,6 +19,9 @@ adb shell input swipe 300 1000 300 700 200; sleep 1.5; shot new-alarm-turned
 adb shell input swipe 540 1900 540 600 300; sleep 1; shot new-alarm-scrolled
 tap_text "Save"; sleep 2; shot home-with-alarm
 
+# The four shapes, with the alarm just saved
+bash tools/shapes.sh
+
 # The bedside clock
 adb shell am start -n $PKG/.MainActivity --es open bedside; sleep 4; shot bedside
 adb shell input tap 540 1200; sleep 1; shot bedside-touched

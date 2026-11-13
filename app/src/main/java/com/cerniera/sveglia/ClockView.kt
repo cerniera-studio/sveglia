@@ -66,7 +66,9 @@ class ClockView(ctx: Context) : View(ctx) {
         if (dawn > 0f) {
             val wide = Hinge.unfolded(context)
             val cx = w / 2f
-            val r = minOf(w, h) * (if (wide) 0.09f else 0.14f)
+            // Smaller on a short, wide screen (the cover turned), so the risen sun stays clear of the
+            // wake screen's Snooze and Stop at the foot
+            val r = minOf(w, h) * (if (wide) 0.09f else if (w > h) 0.10f else 0.14f)
             // It climbs to just over a third of the way up, always below the time
             val cy = h + r * 1.2f - (h * 0.36f + r * 1.2f) * Kit.ease.getInterpolation(dawn)
             val breath = if (breathing) 1f + 0.08f * sin((System.currentTimeMillis() - startedAt) / 900.0).toFloat() else 1f
