@@ -66,7 +66,8 @@ for s in "cover-portrait 823x1920 320 0" "cover-landscape 823x1920 320 1" "main-
   adb exec-out screencap -p > "shot-shape-$name-list.png"
   check "Alarms, $name" | tee -a shapes.txt
 
-  # The bedside clock
+  # The bedside clock (from a fresh start: a running list would take the extra as a new intent)
+  adb shell am force-stop $PKG
   adb shell am start -n $PKG/.MainActivity --es open bedside; sleep 4
   adb exec-out screencap -p > "shot-shape-$name-bedside.png"
   adb shell am force-stop $PKG
