@@ -17,7 +17,11 @@ shape() {  # WxH (upright) dpi rotation
 }
 
 check() {  # name: each part ends inside the view, clear of the bars
-  json=$(adb shell run-as $PKG cat files/layout.json 2>/dev/null)
+  # The screen writes its layout once laid out, which can take a moment after a turn: wait for it
+  for try in 1 2 3 4 5 6; do
+    json=$(adb shell run-as $PKG cat files/layout.json 2>/dev/null)
+    [ -n "$json" ] && break; sleep 1
+  done
   python3 - "$1" "$json" <<'PY'
 import sys, json
 name = sys.argv[1]
