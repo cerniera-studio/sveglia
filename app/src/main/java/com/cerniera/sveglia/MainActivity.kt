@@ -61,6 +61,7 @@ class MainActivity : Activity() {
     private fun render() {
         window.statusBarColor = Kit.GROUND; window.navigationBarColor = Kit.GROUND
         val s = Screen(this, "Sveglia", "Cerniera · Alarm")
+        val panes = Panes(this, s)
         val now = Alarm.now()
         val next = Alarms.next(this, now)
 
@@ -79,7 +80,12 @@ class MainActivity : Activity() {
         hero.addView(words, LinearLayout.LayoutParams(0, -2, 1f))
         hero.addView(ClockView(this).apply { dawn = 0.55f; showTime = false; background = rounded(0, px(18).toFloat()); clipToOutline = true; outlineProvider = android.view.ViewOutlineProvider.BACKGROUND },
             LinearLayout.LayoutParams(px(88), px(116)))
-        s.add(hero, px(22))
+        panes.add(hero, px(22))
+
+        val list = Alarms.all(this)
+        val addBtn = primary("Add an alarm", filled = list.isEmpty()) { edit(null) }
+        panes.add(addBtn, px(12))
+        val root = panes.build()
 
         // Permissions, only when something is missing (Giulietta)
         val missing = mutableListOf<Row>()
@@ -100,7 +106,7 @@ class MainActivity : Activity() {
 
         // The alarms
         s.section("Alarms")
-        val list = Alarms.all(this)
+        var firstAlarm: Row? = null
         if (list.isNotEmpty()) {
             val c = Card(this)
             list.forEach { a ->
@@ -108,10 +114,10 @@ class MainActivity : Activity() {
                 val row = Row(this, "%02d:%02d".format(a.hour, a.minute), sub, Toggle(this, a.enabled) { on -> Alarms.put(this, a.copy(enabled = on)); render() }) { edit(a) }
                 row.titleView.apply { typeface = Kit.display(context); textSize = 30f; setTextColor(if (a.enabled) Kit.INK else Kit.MUTED) }
                 c.row(row)
+                if (firstAlarm == null) firstAlarm = row
             }
             s.add(c)
         }
-        s.add(primary("Add an alarm", filled = list.isEmpty()) { edit(null) }, px(12))
 
         // The bedside
         s.section("Bedside")
@@ -131,7 +137,8 @@ class MainActivity : Activity() {
             "Giulietta" to "The wake screen's controls wait for a touch during the dawn and recede after 3.2 seconds. Permissions show only when one is missing.",
             "The fold" to "The sun rises out of the hinge: from the foot of the cover screen, or up the crease when open. Folding or unfolding the phone stops the alarm, because the hand that moves the hinge is awake.",
         )), px(28))
-        setContentView(s.root)
+        setContentView(root)
+        panes.record(root, mapOf("next" to hero, "add" to addBtn, "first-alarm" to firstAlarm))
     }
 
     // ---- Editing -----------------------------------------------------------------------------

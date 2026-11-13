@@ -18,8 +18,13 @@ import kotlin.math.sin
 
 /**
  * The sky and the time. [dawn] runs from 0 (night) to 1 (day): the sky warms from the horizon up
- * and the sun climbs out of the hinge. On the main screen the sun rises on the crease itself; on the
+ * and the sun climbs out of the hinge. On the main screen upright the sun rises up the crease; on the
  * cover it rises from the foot of the screen, where the hinge is.
+ *
+ * On the main screen turned, the crease runs side to side: the phone half-folded and standing on the
+ * bedside table (13 Nov 2026). There the crease is the horizon. The top half is the sky, holding the
+ * time, and the sun comes up out of the crease into it. The bottom half lies flat on the table, so it
+ * is ground: dark, with nothing to read, only the sun's warmth spreading across it as it rises.
  *
  * At night nothing moves but the minute; nothing redraws between minutes. Over a night the time
  * drifts a few pixels each minute so it never burns into the screen.
@@ -58,17 +63,26 @@ class ClockView(ctx: Context) : View(ctx) {
     override fun onDraw(c: Canvas) {
         val w = width.toFloat(); val h = height.toFloat()
         val top = Dawn.topAt(dawn); val horizon = Dawn.horizonAt(dawn)
-        p.shader = LinearGradient(0f, 0f, 0f, h, top, horizon, Shader.TileMode.CLAMP)
-        c.drawRect(0f, 0f, w, h, p)
+        val wide = Hinge.unfolded(context)
+        // The main screen turned: the crease across the middle is the horizon
+        val crease = wide && w > h
+        val ground = if (crease) h / 2f else h
+        p.shader = LinearGradient(0f, 0f, 0f, ground, top, horizon, Shader.TileMode.CLAMP)
+        c.drawRect(0f, 0f, w, ground, p)
         p.shader = null
 
         // The sun: from below the hinge at night to a third of the way up by full day
         if (dawn > 0f) {
-            val wide = Hinge.unfolded(context)
             val cx = w / 2f
-            val r = minOf(w, h) * (if (wide) 0.09f else 0.14f)
-            // It climbs to just over a third of the way up, always below the time
-            val cy = h + r * 1.2f - (h * 0.36f + r * 1.2f) * Kit.ease.getInterpolation(dawn)
+            // Smaller on a short, wide screen (the cover turned), so the risen sun stays clear of the
+            // wake screen's Snooze and Stop at the foot; smaller again over the crease, where it has
+            // only the top half to climb in
+            val r = minOf(w, h) * (if (crease) 0.06f else if (wide) 0.09f else if (w > h) 0.10f else 0.14f)
+            // It starts hidden below the horizon and climbs to just over a third of the way up the
+            // screen (over the crease, to a little above it), always below the time
+            val start = ground + r * 1.2f
+            val end = if (crease) h * 0.37f else h * 0.64f
+            val cy = start - (start - end) * Kit.ease.getInterpolation(dawn)
             val breath = if (breathing) 1f + 0.08f * sin((System.currentTimeMillis() - startedAt) / 900.0).toFloat() else 1f
             val glowR = r * (3.2f + 1.6f * dawn) * breath
             val sunC = blend(0xFFB8141E.toInt(), 0xFFFFF4E0.toInt(), Kit.ease.getInterpolation(dawn))
@@ -78,6 +92,23 @@ class ClockView(ctx: Context) : View(ctx) {
             p.color = sunC
             c.drawCircle(cx, cy, r, p)
             if (breathing) postInvalidateDelayed(40)
+        }
+
+        // Over the crease: the bottom half is ground, drawn over the sun so it rises from behind the
+        // horizon. Dark, warming only a little, with the sun's light spreading across it from the crease.
+        if (crease) {
+            val e = Kit.ease.getInterpolation(dawn)
+            p.color = blend(0xFF0A0E0C.toInt(), horizon, 0.16f * e)
+            c.drawRect(0f, ground, w, h, p)
+            if (dawn > 0f) {
+                val warm = blend(0xFFB8141E.toInt(), 0xFFFFF4E0.toInt(), e)
+                p.shader = LinearGradient(0f, ground, 0f, ground + h * 0.32f, withAlpha(warm, 0.30f * dawn), withAlpha(warm, 0f), Shader.TileMode.CLAMP)
+                c.drawRect(0f, ground, w, h, p)
+                p.shader = null
+            }
+            // The horizon itself, a hairline of the sky's lowest colour
+            p.color = withAlpha(horizon, 0.35f + 0.4f * dawn)
+            c.drawRect(0f, ground - context.px(1), w, ground + context.px(1), p)
         }
 
         if (!showTime) return
@@ -90,8 +121,9 @@ class ClockView(ctx: Context) : View(ctx) {
         p.color = withAlpha(ink, (if (dawn == 0f) 0.62f else 0.92f) * dim)
         p.typeface = Kit.display(context)
         p.textAlign = Paint.Align.CENTER
-        p.textSize = minOf(w * 0.30f, h * 0.24f)
-        val y = h * 0.30f + dy
+        // Over the crease the time keeps to the sky, the top half: smaller and higher
+        p.textSize = minOf(w * 0.30f, h * (if (crease) 0.14f else 0.24f))
+        val y = h * (if (crease) 0.20f else 0.30f) + dy
         c.drawText(LocalTime.now().format(fmt), w / 2f + dx, y, p)
         if (caption.isNotEmpty()) {
             p.typeface = Kit.sans(context, 450)
