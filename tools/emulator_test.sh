@@ -26,10 +26,18 @@ adb shell input swipe 540 1900 540 500 300; sleep 1; shot home-lower
 # The four shapes, with the alarm just saved
 bash tools/shapes.sh
 
-# The bedside clock
+# The bedside clock, in each screen-saver style (the emulator counts as charging)
 adb shell am start -n $PKG/.MainActivity --es open bedside; sleep 4; shot bedside
 adb shell input tap 540 1200; sleep 1; shot bedside-touched
 adb shell input keyevent KEYCODE_BACK; sleep 1
+for st in SKY TIDE QUIET; do
+  adb shell am force-stop $PKG
+  adb shell am start -n $PKG/.MainActivity --es open bedside --es night $st; sleep 5; shot bedside-$st
+  adb shell input keyevent KEYCODE_BACK; sleep 1
+done
+# The screen-saver choices in settings
+adb shell am force-stop $PKG; adb shell am start -n $PKG/.MainActivity; sleep 3
+for i in 1 2 3 4; do adb shell input swipe 540 1900 540 400 300; sleep 0.8; done; shot settings-screensaver
 
 # The dawn and the ring, previewed: part way through the dawn, ringing, then snoozed
 adb shell am force-stop $PKG
