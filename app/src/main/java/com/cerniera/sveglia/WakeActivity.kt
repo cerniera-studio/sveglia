@@ -89,6 +89,7 @@ class WakeActivity : Activity(), Hinge.Listener {
     private fun update() {
         if (Live.phase == Live.Phase.IDLE) { finish(); return }
         val p = Live.progress()
+        clock.skyAt = Live.skyAt()
         clock.dawn = p
         clock.breathing = Live.phase == Live.Phase.RING
         clock.caption = when (Live.phase) {
