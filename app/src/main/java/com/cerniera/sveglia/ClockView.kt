@@ -42,6 +42,9 @@ class ClockView(ctx: Context) : View(ctx) {
     var showTime = true
     /** While ringing: a slow breath of light around the sun. */
     var breathing = false
+    /** Solco draws the sky behind (the wake screen is see-through): only the time is drawn here. */
+    var seeThrough = false
+        set(v) { field = v; invalidate() }
     /** The moment whose real sun is drawn, epoch ms; 0 for now. A preview shows the next alarm's sky. */
     var skyAt = 0L
         set(v) { field = v; invalidate() }
@@ -70,6 +73,7 @@ class ClockView(ctx: Context) : View(ctx) {
         // The main screen turned: the crease across the middle is the horizon
         val crease = wide && w > h
         val ground = if (crease) h / 2f else h
+        if (seeThrough) { drawTime(c, w, h, crease, 0f); return }
         p.shader = LinearGradient(0f, 0f, 0f, ground, top, horizon, Shader.TileMode.CLAMP)
         c.drawRect(0f, 0f, w, ground, p)
         p.shader = null
@@ -124,8 +128,13 @@ class ClockView(ctx: Context) : View(ctx) {
         }
 
         if (!showTime) return
+        drawTime(c, w, h, crease, luminance(top))
+    }
+
+    /** The time and its line. Over Solco (see-through) the ground is always dark, so the ink is ivory. */
+    private fun drawTime(c: Canvas, w: Float, h: Float, crease: Boolean, lum: Float) {
+        if (!showTime) return
         // The time, in a colour that reads on whatever the sky has become
-        val lum = luminance(top)
         // Wind-down (14 Nov 2026): at night the bedside clock follows the real dusk. From sunset the
         // time warms from ivory towards ember and dims a little, fully so once the sun is 12° down.
         val dusk = if (dawn == 0f && skyAt == 0L) Daylight.dusk(System.currentTimeMillis()) else 0f
@@ -136,6 +145,8 @@ class ClockView(ctx: Context) : View(ctx) {
         p.color = withAlpha(ink, (if (dawn == 0f) 0.62f else 0.92f) * dim * (1f - 0.22f * dusk))
         p.typeface = Kit.display(context)
         p.textAlign = Paint.Align.CENTER
+        // Over Solco's grain and glow, a soft shadow keeps the time clear of whatever lies behind it
+        if (seeThrough) p.setShadowLayer(context.px(10).toFloat(), 0f, 0f, 0x80000000.toInt()) else p.clearShadowLayer()
         // Over the crease the time keeps to the sky, the top half: smaller and higher
         p.textSize = minOf(w * 0.30f, h * (if (crease) 0.14f else 0.24f))
         val y = h * (if (crease) 0.20f else 0.30f) + dy

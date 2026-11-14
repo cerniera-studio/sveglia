@@ -166,6 +166,9 @@ class MainActivity : Activity() {
             if (Daylight.hasLocation(this)) Daylight.follow(this) { if (editing == null) render() }
             else requestPermissions(arrayOf(android.Manifest.permission.ACCESS_COARSE_LOCATION), ASK_PLACE)
         })
+        if (SharedDawn.solcoIsWallpaper(this)) b.row(Row(this, "Solco draws the dawn",
+            "Solco is your wallpaper, so the alarm screen goes see-through and Solco warms from the hinge behind the time",
+            Toggle(this, SharedDawn.wanted(this)) { on -> SharedDawn.setWanted(this, on) }))
         b.row(Row(this, "Try the dawn", "Thirty seconds of your next alarm's dawn, under its real sky, then ten of the alarm", endValue("›")) {
             startForegroundService(Intent(this, RingService::class.java).setAction(RingService.PREVIEW))
         })
