@@ -89,6 +89,8 @@ class RingService : Service() {
     private fun preview() {
         val now = System.currentTimeMillis()
         Live.begin(Live.Phase.DAWN, -1, now, now + 30_000)
+        // The preview's sky is the next alarm's: the real sun as it will stand when that alarm rings
+        Alarms.next(this)?.let { Live.skyOffset = it.ring.toInstant().toEpochMilli() - (now + 30_000) }
         h.postDelayed({ Live.phase = Live.Phase.RING; Live.changed(); sound(null); h.postDelayed({ stop(false) }, 10_000) }, 30_000)
     }
 
@@ -160,10 +162,12 @@ object Live {
     @Volatile var dawnStart = 0L
     @Volatile var ringAt = 0L
     @Volatile var snoozed = false
+    /** Added to the clock to find the sky drawn: 0 for a real alarm; a preview shows its alarm's sky. */
+    @Volatile var skyOffset = 0L
     private val listeners = mutableSetOf<() -> Unit>()
 
     fun begin(p: Phase, id: Int, dawnStart: Long, ringAt: Long) {
-        phase = p; this.id = id; this.dawnStart = dawnStart; this.ringAt = ringAt; snoozed = false
+        phase = p; this.id = id; this.dawnStart = dawnStart; this.ringAt = ringAt; snoozed = false; skyOffset = 0L
         changed()
     }
 
@@ -175,6 +179,9 @@ object Live {
         Phase.DAWN -> if (ringAt <= dawnStart) 1f else ((now - dawnStart).toFloat() / (ringAt - dawnStart)).coerceIn(0f, 1f)
         Phase.IDLE -> 0f
     }
+
+    /** The moment whose real sun the wake screen draws. */
+    fun skyAt(now: Long = System.currentTimeMillis()) = now + skyOffset
 
     fun listen(l: () -> Unit) = synchronized(listeners) { listeners += l }
     fun unlisten(l: () -> Unit) = synchronized(listeners) { listeners -= l }

@@ -17,8 +17,8 @@ import java.time.format.DateTimeFormatter
 import kotlin.math.sin
 
 /**
- * The sky and the time. [dawn] runs from 0 (night) to 1 (day): the sky warms from the horizon up
- * and the sun climbs out of the hinge. On the main screen upright the sun rises up the crease; on the
+ * The sky and the time. [dawn] runs from 0 (night) to 1 (day): the sky warms from the horizon up.
+ * The sun is the real one ([Daylight]): it climbs out of the hinge only when it is really up. On the main screen upright the sun rises up the crease; on the
  * cover it rises from the foot of the screen, where the hinge is.
  *
  * On the main screen turned, the crease runs side to side: the phone half-folded and standing on the
@@ -42,6 +42,9 @@ class ClockView(ctx: Context) : View(ctx) {
     var showTime = true
     /** While ringing: a slow breath of light around the sun. */
     var breathing = false
+    /** The moment whose real sun is drawn, epoch ms; 0 for now. A preview shows the next alarm's sky. */
+    var skyAt = 0L
+        set(v) { field = v; invalidate() }
 
     private val p = Paint(Paint.ANTI_ALIAS_FLAG)
     private val fmt = DateTimeFormatter.ofPattern("HH:mm")
@@ -71,26 +74,35 @@ class ClockView(ctx: Context) : View(ctx) {
         c.drawRect(0f, 0f, w, ground, p)
         p.shader = null
 
-        // The sun: from below the hinge at night to a third of the way up by full day
+        // The sun: the real one (14 Nov 2026). The alarm brings the light; the sun stands only where it
+        // really is. Up, it climbs from the hinge with its true altitude, to just over a third of the way up
+        // (over the crease, a little above it), always below the time. Just before sunrise it waits under
+        // the horizon and only its glow shows; before first light there is no sun at all.
         if (dawn > 0f) {
             val cx = w / 2f
             // Smaller on a short, wide screen (the cover turned), so the risen sun stays clear of the
             // wake screen's Snooze and Stop at the foot; smaller again over the crease, where it has
             // only the top half to climb in
             val r = minOf(w, h) * (if (crease) 0.06f else if (wide) 0.09f else if (w > h) 0.10f else 0.14f)
-            // It starts hidden below the horizon and climbs to just over a third of the way up the
-            // screen (over the crease, to a little above it), always below the time
-            val start = ground + r * 1.2f
-            val end = if (crease) h * 0.37f else h * 0.64f
-            val cy = start - (start - end) * Kit.ease.getInterpolation(dawn)
-            val breath = if (breathing) 1f + 0.08f * sin((System.currentTimeMillis() - startedAt) / 900.0).toFloat() else 1f
-            val glowR = r * (3.2f + 1.6f * dawn) * breath
-            val sunC = blend(0xFFB8141E.toInt(), 0xFFFFF4E0.toInt(), Kit.ease.getInterpolation(dawn))
-            p.shader = RadialGradient(cx, cy, glowR, withAlpha(sunC, 0.55f * dawn), withAlpha(sunC, 0f), Shader.TileMode.CLAMP)
-            c.drawCircle(cx, cy, glowR, p)
-            p.shader = null
-            p.color = sunC
-            c.drawCircle(cx, cy, r, p)
+            val alt = Daylight.altitude(if (skyAt > 0L) skyAt else System.currentTimeMillis())
+            val twilight = Daylight.twilight(alt)
+            if (twilight > 0f) {
+                // At sunrise its upper edge touches the horizon; below that it is hidden under it
+                val start = ground + r
+                val end = if (crease) h * 0.37f else h * 0.64f
+                val cy = start - (start - end) * Daylight.rise(alt)
+                val e = Kit.ease.getInterpolation(dawn)
+                val breath = if (breathing) 1f + 0.08f * sin((System.currentTimeMillis() - startedAt) / 900.0).toFloat() else 1f
+                val glowR = r * (3.2f + 1.6f * dawn) * breath
+                val sunC = blend(0xFFB8141E.toInt(), 0xFFFFF4E0.toInt(), e)
+                p.shader = RadialGradient(cx, cy, glowR, withAlpha(sunC, 0.55f * dawn * twilight), withAlpha(sunC, 0f), Shader.TileMode.CLAMP)
+                c.drawCircle(cx, cy, glowR, p)
+                p.shader = null
+                if (Daylight.rise(alt) > -0.2f) {
+                    p.color = withAlpha(sunC, (0.25f + 0.75f * e).coerceAtMost(1f))
+                    c.drawCircle(cx, cy, r, p)
+                }
+            }
             if (breathing) postInvalidateDelayed(40)
         }
 

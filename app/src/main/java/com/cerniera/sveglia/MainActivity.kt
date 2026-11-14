@@ -35,6 +35,8 @@ import com.cerniera.kit.text
  * Sveglia: alarms that wake you with light first. The list of alarms, the next one large at the
  * top, the bedside clock, and only the permissions that still need granting.
  */
+private const val ASK_PLACE = 31
+
 class MainActivity : Activity() {
     private var editing: Sheet? = null
     private var pickedSound: ((String?) -> Unit)? = null
@@ -54,7 +56,16 @@ class MainActivity : Activity() {
     }
 
     /** Coming back from a picker leaves an open sheet as it was. */
-    override fun onResume() { super.onResume(); Alarms.schedule(this); if (editing == null) render() }
+    override fun onResume() {
+        super.onResume(); Alarms.schedule(this); if (editing == null) render()
+        // While Sveglia is open, the sky follows the phone (never in the background)
+        Daylight.follow(this) { moved -> if (moved && editing == null) render() }
+    }
+
+    override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        if (requestCode == ASK_PLACE) Daylight.follow(this) { if (editing == null) render() }
+    }
 
     override fun onConfigurationChanged(c: Configuration) { super.onConfigurationChanged(c); Kit.follow(this); render() }
 
@@ -78,7 +89,7 @@ class MainActivity : Activity() {
         words.addView(text(next?.let { Alarm.until(now, it.ring) + (it.dawnStart?.let { d -> " · dawn from %02d:%02d".format(d.hour, d.minute) } ?: "") } ?: "No alarms set",
             14f, Kit.MUTED).apply { tag = SECONDARY })
         hero.addView(words, LinearLayout.LayoutParams(0, -2, 1f))
-        hero.addView(ClockView(this).apply { dawn = 0.55f; showTime = false; background = rounded(0, px(18).toFloat()); clipToOutline = true; outlineProvider = android.view.ViewOutlineProvider.BACKGROUND },
+        hero.addView(ClockView(this).apply { dawn = 0.55f; showTime = false; skyAt = next?.ring?.toInstant()?.toEpochMilli() ?: 0L; background = rounded(0, px(18).toFloat()); clipToOutline = true; outlineProvider = android.view.ViewOutlineProvider.BACKGROUND },
             LinearLayout.LayoutParams(px(88), px(116)))
         panes.add(hero, px(22))
 
@@ -126,7 +137,11 @@ class MainActivity : Activity() {
         b.row(Row(this, "As a screen saver", "Shows by itself while charging: choose Sveglia under Screen saver", endValue("›")) {
             runCatching { startActivity(Intent(Settings.ACTION_DREAM_SETTINGS)) }
         })
-        b.row(Row(this, "Try the dawn", "Thirty seconds of sunrise, then ten of the alarm", endValue("›")) {
+        b.row(Row(this, "Sky over", Daylight.describe(), endValue(if (Daylight.hasLocation(this)) "›" else "Use my location", if (Daylight.hasLocation(this)) Kit.MUTED else Kit.CHAMPAGNE)) {
+            if (Daylight.hasLocation(this)) Daylight.follow(this) { if (editing == null) render() }
+            else requestPermissions(arrayOf(android.Manifest.permission.ACCESS_COARSE_LOCATION), ASK_PLACE)
+        })
+        b.row(Row(this, "Try the dawn", "Thirty seconds of your next alarm's dawn, under its real sky, then ten of the alarm", endValue("›")) {
             startForegroundService(Intent(this, RingService::class.java).setAction(RingService.PREVIEW))
         })
         s.add(b)
@@ -135,6 +150,7 @@ class MainActivity : Activity() {
             "Membrane" to "The time drums roll with your finger and settle on the nearest number. The sun is one body with the sky: the whole screen warms as it climbs.",
             "Concentrato" to "At night the screen holds only the time. During the dawn nothing else appears until you touch it.",
             "Giulietta" to "The wake screen's controls wait for a touch during the dawn and recede after 3.2 seconds. Permissions show only when one is missing.",
+            "The sky" to "The sun is the real one over the phone, the same as Solco's. The alarm brings the light, but the sun only appears when it is really up: on a winter morning before first light, only the horizon warms.",
             "The fold" to "The sun rises out of the hinge: from the foot of the cover screen, or up the crease when open. Folding or unfolding the phone stops the alarm, because the hand that moves the hinge is awake.",
         )), px(28))
         setContentView(root)
