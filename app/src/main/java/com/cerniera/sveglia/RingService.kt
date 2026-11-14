@@ -75,23 +75,37 @@ class RingService : Service() {
         val a = Alarms.get(this, id) ?: return ring(id)
         val ringAt = a.next(Alarm.now().minusMinutes(a.dawn.toLong() + 1))?.toInstant()?.toEpochMilli() ?: return ring(id)
         Live.begin(Live.Phase.DAWN, id, System.currentTimeMillis(), ringAt)
+        morning()
     }
 
     private fun ring(id: Int) {
         if (Live.phase != Live.Phase.DAWN || Live.id != id) Live.begin(Live.Phase.RING, id, System.currentTimeMillis(), System.currentTimeMillis())
         Live.phase = Live.Phase.RING
+        if (Live.morning.isEmpty()) morning()
         Live.changed()
         sound(Alarms.get(this, id)?.sound)
         h.postDelayed({ stop(snooze = false) }, 15 * 60_000L)
+    }
+
+    /** The morning line for the ring: today's first event and weather, fetched in the background. */
+    private fun morning() {
+        val app = applicationContext
+        Thread {
+            runCatching {
+                if (Morning.showWeather(app)) Morning.fetchWeather(app)
+                Live.morning = Morning.line(app); Live.changed()
+            }
+        }.start()
     }
 
     /** A thirty-second dawn and ten seconds of sound, from the app, to see and hear it. */
     private fun preview() {
         val now = System.currentTimeMillis()
         Live.begin(Live.Phase.DAWN, -1, now, now + 30_000)
+        morning()
         // The preview's sky is the next alarm's: the real sun as it will stand when that alarm rings
         Alarms.next(this)?.let { Live.skyOffset = it.ring.toInstant().toEpochMilli() - (now + 30_000) }
-        h.postDelayed({ Live.phase = Live.Phase.RING; Live.changed(); sound(null); h.postDelayed({ stop(false) }, 10_000) }, 30_000)
+        h.postDelayed({ Live.phase = Live.Phase.RING; Live.changed(); sound(Alarms.next(this)?.let { n -> Alarms.get(this, n.id)?.sound }); h.postDelayed({ stop(false) }, 10_000) }, 30_000)
     }
 
     private fun sound(uri: String?) {
@@ -162,12 +176,14 @@ object Live {
     @Volatile var dawnStart = 0L
     @Volatile var ringAt = 0L
     @Volatile var snoozed = false
+    /** One line for the ring: the day's first event and the weather ("" when there's nothing to say). */
+    @Volatile var morning = ""
     /** Added to the clock to find the sky drawn: 0 for a real alarm; a preview shows its alarm's sky. */
     @Volatile var skyOffset = 0L
     private val listeners = mutableSetOf<() -> Unit>()
 
     fun begin(p: Phase, id: Int, dawnStart: Long, ringAt: Long) {
-        phase = p; this.id = id; this.dawnStart = dawnStart; this.ringAt = ringAt; snoozed = false; skyOffset = 0L
+        phase = p; this.id = id; this.dawnStart = dawnStart; this.ringAt = ringAt; snoozed = false; skyOffset = 0L; morning = ""
         changed()
     }
 

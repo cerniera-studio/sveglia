@@ -50,6 +50,9 @@ object Daylight {
     /** Twilight's share of the sun's glow: 0 before first light, rising to 1 at sunrise. */
     fun twilight(alt: Double): Float = ((alt - Heavens.CIVIL) / (Heavens.HORIZON - Heavens.CIVIL)).toFloat().coerceIn(0f, 1f)
 
+    /** How far into the evening: 0 while the sun is up, 1 once it is 12° below the horizon. */
+    fun dusk(ms: Long): Float = ((Heavens.HORIZON - altitude(ms)) / 12.0).toFloat().coerceIn(0f, 1f)
+
     /** For the settings row: "Leeds, until your location is used" or "Harrogate, from your location". */
     fun describe(): String = if (placeAt == 0L) "${place.name}, until your location is used" else "${place.name}, from your location"
 

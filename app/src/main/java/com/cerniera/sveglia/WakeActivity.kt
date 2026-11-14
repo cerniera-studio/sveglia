@@ -93,7 +93,7 @@ class WakeActivity : Activity(), Hinge.Listener {
         clock.dawn = p
         clock.breathing = Live.phase == Live.Phase.RING
         clock.caption = when (Live.phase) {
-            Live.Phase.RING -> "Tap to snooze · fold to stop"
+            Live.Phase.RING -> Live.morning.ifEmpty { "Tap to snooze · fold to stop" }
             else -> Alarms.get(this, Live.id)?.label?.takeIf { it.isNotBlank() }
                 ?: "Alarm at " + DateTimeFormatter.ofPattern("HH:mm").format(Instant.ofEpochMilli(Live.ringAt).atZone(ZoneId.systemDefault()))
         }

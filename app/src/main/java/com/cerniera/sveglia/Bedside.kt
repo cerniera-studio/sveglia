@@ -54,13 +54,18 @@ class BedsideActivity : Activity(), SensorEventListener {
         dimTo(0.05f)
     }
 
+    private val recount = object : Runnable {
+        override fun run() { clock.caption = nextCaption(this@BedsideActivity); clock.postDelayed(this, 60_000 - System.currentTimeMillis() % 60_000 + 80) }
+    }
+
     override fun onResume() {
         super.onResume()
-        clock.caption = nextCaption(this)
+        recount.run()
         light?.let { getSystemService(SensorManager::class.java)?.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) }
     }
 
     override fun onPause() {
+        clock.removeCallbacks(recount)
         getSystemService(SensorManager::class.java)?.unregisterListener(this)
         super.onPause()
     }
@@ -86,6 +91,10 @@ class Nightstand : DreamService(), SensorEventListener {
         isFullscreen = true
         isScreenBright = false
         clock = ClockView(this).apply { caption = nextCaption(this@Nightstand) }
+        val recount = object : Runnable {
+            override fun run() { clock.caption = nextCaption(this@Nightstand); clock.postDelayed(this, 60_000 - System.currentTimeMillis() % 60_000 + 80) }
+        }
+        clock.post(recount)
         setContentView(clock)
         getSystemService(SensorManager::class.java)?.let { sm -> sm.getDefaultSensor(Sensor.TYPE_LIGHT)?.let { sm.registerListener(this, it, SensorManager.SENSOR_DELAY_NORMAL) } }
     }
@@ -107,7 +116,19 @@ object Bedside {
     }
 }
 
+/**
+ * The line under the bedside time. Within a day of the alarm it is a quiet count, "7 h 40 until your
+ * 07:00 alarm", so putting the phone down at night says how much sleep is left; further off, the day.
+ */
 fun nextCaption(c: Context): String {
     val n = Alarms.next(c) ?: return ""
-    return "Alarm " + "%02d:%02d".format(n.ring.hour, n.ring.minute) + " · " + Alarm.until(Alarm.now(), n.ring).lowercase()
+    val now = Alarm.now()
+    val time = "%02d:%02d".format(n.ring.hour, n.ring.minute)
+    val m = java.time.Duration.between(now, n.ring).toMinutes().coerceAtLeast(0)
+    return when {
+        m < 1 -> "Your $time alarm"
+        m < 60 -> "$m min until your $time alarm"
+        m < 24 * 60 -> "${m / 60} h${if (m % 60 > 0) " ${m % 60}" else ""} until your $time alarm"
+        else -> "Next alarm " + n.ring.dayOfWeek.name.take(3).lowercase().replaceFirstChar(Char::titlecase) + " $time"
+    }
 }

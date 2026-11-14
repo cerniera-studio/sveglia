@@ -126,11 +126,14 @@ class ClockView(ctx: Context) : View(ctx) {
         if (!showTime) return
         // The time, in a colour that reads on whatever the sky has become
         val lum = luminance(top)
-        val ink = if (lum > 0.45f) 0xFF1D1B19.toInt() else 0xFFF6F1E6.toInt()
+        // Wind-down (14 Nov 2026): at night the bedside clock follows the real dusk. From sunset the
+        // time warms from ivory towards ember and dims a little, fully so once the sun is 12° down.
+        val dusk = if (dawn == 0f && skyAt == 0L) Daylight.dusk(System.currentTimeMillis()) else 0f
+        val ink = if (lum > 0.45f) 0xFF1D1B19.toInt() else blend(0xFFF6F1E6.toInt(), 0xFFE3A05E.toInt(), 0.75f * dusk)
         val drift = ((System.currentTimeMillis() - startedAt) / 60_000L).toInt()
         val dx = context.px(((drift * 7) % 17) - 8).toFloat()
         val dy = context.px(((drift * 5) % 13) - 6).toFloat()
-        p.color = withAlpha(ink, (if (dawn == 0f) 0.62f else 0.92f) * dim)
+        p.color = withAlpha(ink, (if (dawn == 0f) 0.62f else 0.92f) * dim * (1f - 0.22f * dusk))
         p.typeface = Kit.display(context)
         p.textAlign = Paint.Align.CENTER
         // Over the crease the time keeps to the sky, the top half: smaller and higher
@@ -141,7 +144,7 @@ class ClockView(ctx: Context) : View(ctx) {
             p.typeface = Kit.sans(context, 450)
             p.textSize = context.px(15).toFloat()
             p.letterSpacing = 0.06f
-            p.color = withAlpha(ink, 0.6f * dim)
+            p.color = withAlpha(ink, 0.6f * dim * (1f - 0.22f * dusk))
             c.drawText(caption, w / 2f + dx, y + context.px(42), p)
             p.letterSpacing = 0f
         }
