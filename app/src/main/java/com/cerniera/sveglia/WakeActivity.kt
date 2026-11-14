@@ -35,6 +35,7 @@ class WakeActivity : Activity(), Hinge.Listener {
     private lateinit var hinge: Hinge
     private val h = Handler(Looper.getMainLooper())
     private var wide = false
+    private var shared = false
     private val onLive: () -> Unit = { h.post { update() } }
 
     override fun onCreate(saved: Bundle?) {
@@ -46,6 +47,13 @@ class WakeActivity : Activity(), Hinge.Listener {
         hinge = Hinge(this, this)
 
         clock = ClockView(this)
+        // One sky with Solco: over Solco the screen is see-through and Solco draws the dawn behind the time
+        shared = SharedDawn.active(this)
+        if (shared) {
+            window.addFlags(WindowManager.LayoutParams.FLAG_SHOW_WALLPAPER)
+            window.setBackgroundDrawable(android.graphics.drawable.ColorDrawable(0))
+            clock.seeThrough = true
+        }
         controls = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER; alpha = 0f }
         fun pill(label: String, filled: Boolean, onTap: () -> Unit) = text(label, 16f, if (filled) 0xFF0E1311.toInt() else 0xFFF6F1E6.toInt(), 500).apply {
             setPadding(px(26), px(16), px(26), px(16))
@@ -82,13 +90,19 @@ class WakeActivity : Activity(), Hinge.Listener {
         super.onPause()
     }
 
+    override fun onDestroy() {
+        if (shared) SharedDawn.send(this, -1f)
+        super.onDestroy()
+    }
+
     private val tick = object : Runnable {
         override fun run() { update(); h.postDelayed(this, 1000) }
     }
 
     private fun update() {
-        if (Live.phase == Live.Phase.IDLE) { finish(); return }
+        if (Live.phase == Live.Phase.IDLE) { if (shared) SharedDawn.send(this, -1f); finish(); return }
         val p = Live.progress()
+        if (shared) SharedDawn.send(this, p)
         clock.skyAt = Live.skyAt()
         clock.dawn = p
         clock.breathing = Live.phase == Live.Phase.RING
