@@ -13,6 +13,9 @@
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <!-- Coarse only: where the real sky is seen from, taken only while Sveglia is open -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+    <!-- The morning line: today's first event (only with permission) and the forecast from Open-Meteo -->
+    <uses-permission android:name="android.permission.READ_CALENDAR" />
+    <uses-permission android:name="android.permission.INTERNET" />
 
     <application
         android:name=".SvegliaApp"

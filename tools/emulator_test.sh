@@ -8,6 +8,7 @@ source tools/emu.sh
 adb install -r Sveglia.apk
 adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS
 adb shell appops set $PKG USE_FULL_SCREEN_INTENT allow
+adb shell pm grant $PKG android.permission.READ_CALENDAR || true
 adb logcat -c
 
 adb shell am start -n $PKG/.MainActivity
@@ -18,6 +19,9 @@ tap_text "Add an alarm"; sleep 2; shot new-alarm
 adb shell input swipe 300 1000 300 700 200; sleep 1.5; shot new-alarm-turned
 adb shell input swipe 540 1900 540 600 300; sleep 1; shot new-alarm-scrolled
 tap_text "Save"; sleep 2; shot home-with-alarm
+# Lower down: the Morning and Bedside settings
+adb shell input swipe 540 1900 540 500 300; sleep 1; shot home-morning
+adb shell input swipe 540 1900 540 500 300; sleep 1; shot home-lower
 
 # The four shapes, with the alarm just saved
 bash tools/shapes.sh
