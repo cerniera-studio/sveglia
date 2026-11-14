@@ -53,7 +53,11 @@ class MainActivity : Activity() {
         // For the emulator walk-through: open straight into the dawn preview or the bedside clock
         when (intent?.getStringExtra("open")) {
             "preview" -> startForegroundService(Intent(this, RingService::class.java).setAction(RingService.PREVIEW))
-            "bedside" -> startActivity(Intent(this, BedsideActivity::class.java))
+            "bedside" -> {
+                // Tests choose the screen saver's style: --es night SKY
+                intent.getStringExtra("night")?.let { st -> runCatching { Night.setStyle(this, Night.Style.valueOf(st)) } }
+                startActivity(Intent(this, BedsideActivity::class.java))
+            }
         }
     }
 
@@ -174,6 +178,22 @@ class MainActivity : Activity() {
         })
         s.add(b)
 
+        // The bedside clock and screen saver's look (14 Nov 2026)
+        s.section("Screen saver")
+        val styles = listOf(
+            Triple("Quiet", "The time alone over the dark", nightPainter(Night.Style.QUIET)),
+            Triple("Sky", "The real sky outside, light drifting from the sun's side while charging", nightPainter(Night.Style.SKY)),
+            Triple("Tide", "A horizon at the battery's level, breathing while it charges", nightPainter(Night.Style.TIDE)))
+        s.add(ChoiceList(this, styles, Night.style(this).ordinal) { i -> Night.setStyle(this, Night.Style.values()[i]) })
+        val n = Card(this)
+        n.row(Row(this, "The night counting down", "A hairline arc filling towards your alarm; the foot of the screen warms in the half hour before the dawn",
+            Toggle(this, Night.countdown(this)) { on -> Night.setCountdown(this, on) }))
+        n.row(Row(this, "The moon", "Tonight's true phase, small and low, while the sun is down",
+            Toggle(this, Night.moon(this)) { on -> Night.setMoon(this, on) }))
+        s.add(n, px(10))
+        s.add(text("NEVER DIMMER THAN", 10.5f, Kit.MUTED, 500).apply { letterSpacing = 0.2f; setPadding(px(4), px(16), 0, px(8)) })
+        s.add(Segmented(this, listOf("A whisper", "Soft", "Clear"), Night.floor(this)) { i -> Night.setFloor(this, i) })
+
         s.add(doctrineCard(listOf(
             "Membrane" to "The time drums roll with your finger and settle on the nearest number. The sun is one body with the sky: the whole screen warms as it climbs.",
             "Concentrato" to "At night the screen holds only the time and the hours until the alarm. During the dawn nothing else appears until you touch it; at the ring, one line says what the day holds.",
@@ -248,6 +268,26 @@ class MainActivity : Activity() {
     }
 
     private fun soundName(uri: String?): String = Sounds.name(this, uri)
+
+    /** A small drawing of each screen-saver style for its row. */
+    private fun nightPainter(st: Night.Style): (android.graphics.Canvas, android.graphics.RectF) -> Unit = { c, r ->
+        val pt = android.graphics.Paint(android.graphics.Paint.ANTI_ALIAS_FLAG)
+        val box = android.graphics.RectF(r.left + r.width() * 0.22f, r.top + r.height() * 0.1f, r.right - r.width() * 0.22f, r.bottom - r.height() * 0.1f)
+        val rr = r.height() * 0.1f
+        when (st) {
+            Night.Style.SKY -> pt.shader = android.graphics.LinearGradient(0f, box.top, 0f, box.bottom, 0xFF22345A.toInt(), 0xFF7A3A24.toInt(), android.graphics.Shader.TileMode.CLAMP)
+            else -> pt.color = 0xFF0B0F0D.toInt()
+        }
+        c.drawRoundRect(box, rr, rr, pt); pt.shader = null
+        if (st == Night.Style.TIDE) {
+            val y = box.top + box.height() * 0.45f
+            pt.color = 0x336F8E8A; c.drawRect(box.left, y, box.right, box.bottom - rr / 2, pt)
+            pt.color = 0x99F6F1E6.toInt(); c.drawRect(box.left, y - 1f, box.right, y + 1f, pt)
+        }
+        pt.color = 0xCCF6F1E6.toInt(); pt.textAlign = android.graphics.Paint.Align.CENTER
+        pt.typeface = Kit.display(this); pt.textSize = box.width() * 0.32f
+        c.drawText("06:40", box.centerX(), box.top + box.height() * 0.36f, pt)
+    }
 
     @Deprecated("A one-off pick")
     override fun onActivityResult(req: Int, res: Int, data: Intent?) {
