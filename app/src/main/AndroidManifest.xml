@@ -84,5 +84,17 @@
                 <action android:name="android.app.action.SCHEDULE_EXACT_ALARM_PERMISSION_STATE_CHANGED" />
             </intent-filter>
         </receiver>
+
+        <!-- Vespro: notification access is how Android shows other apps' media sessions, so the evening
+             can fade and pause what's playing. No notification is read -->
+        <service
+            android:name=".VesproListener"
+            android:exported="true"
+            android:label="Sveglia · Vespro"
+            android:permission="android.permission.BIND_NOTIFICATION_LISTENER_SERVICE">
+            <intent-filter>
+                <action android:name="android.service.notification.NotificationListenerService" />
+            </intent-filter>
+        </service>
     </application>
 </manifest>
