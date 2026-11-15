@@ -178,26 +178,6 @@ class MainActivity : Activity() {
         })
         s.add(b)
 
-        // Vespro, the evening (15 Nov 2026). First step: fade what's playing, to try in bed
-        s.section("Evening · Vespro")
-        val v = Card(this)
-        if (!Vespro.allowed(this)) v.row(Row(this, "Allow notification access",
-            "So the evening can fade and pause what's playing in Audible, BBC Sounds or YT Music. Sveglia reads no notifications",
-            endValue("Allow", Kit.CHAMPAGNE)) { runCatching { startActivity(Intent(Settings.ACTION_NOTIFICATION_LISTENER_SETTINGS)) } })
-        else {
-            val idle = "Fades what's playing to silence on the family's curve, pauses it, then puts the volume back"
-            val fadeRow = Row(this, "Fade what's playing", idle, endValue(if (Vespro.fading) "Stop" else "60 s", Kit.CHAMPAGNE))
-            fadeRow.setOnClickListener {
-                if (Vespro.fading) { Vespro.stop(); fadeRow.setSub(idle); return@setOnClickListener }
-                val name = Vespro.fade(this)
-                fadeRow.setSub(if (name == null) "Nothing is playing. Start a book or a programme, then try again" else "Fading $name…")
-            }
-            Vespro.onProgress = { name, p -> fadeRow.setSub("Fading $name · ${(p * 100).toInt()}%") }
-            Vespro.onDone = { name -> fadeRow.setSub("$name paused. Its volume is back for the morning") }
-            v.row(fadeRow)
-        }
-        s.add(v)
-
         // The bedside clock and screen saver's look (14 Nov 2026)
         s.section("Screen saver")
         val styles = listOf(
