@@ -128,6 +128,9 @@ class MainActivity : Activity() {
         if (Build.VERSION.SDK_INT >= 34 && !nm.canUseFullScreenIntent()) missing += Row(this, "Allow full-screen alarms", "So the dawn can fill the screen over the lock screen", endValue("›", Kit.WARN)) {
             startActivity(Intent(Settings.ACTION_MANAGE_APP_USE_FULL_SCREEN_INTENT, Uri.parse("package:$packageName")))
         }
+        if (!Settings.canDrawOverlays(this)) missing += Row(this, "Allow Sveglia to appear on top", "So the alarm screen opens by itself when the time comes, even while you're using the phone", endValue("›", Kit.WARN)) {
+            startActivity(Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION, Uri.parse("package:$packageName")))
+        }
         if (missing.isNotEmpty()) {
             s.section("Needs your permission")
             s.add(Card(this).apply { missing.forEach { row(it) } })

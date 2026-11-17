@@ -67,8 +67,17 @@ class RingService : Service() {
             .build()
         runCatching { startForeground(1, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_MEDIA_PLAYBACK) }
             .onFailure { Crash.save(this, "Sveglia", "startForeground", it) }
-        // The full-screen intent only shows by itself when the phone is locked or the screen is off
-        runCatching { startActivity(Intent(this, WakeActivity::class.java).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)) }
+        // The full-screen intent only opens the wake screen by itself when the phone is locked or the
+        // screen is off; while it is in use Android shows a heads-up instead. Opening it from here
+        // is what puts it on screen then, and Android allows that only with "Appear on top".
+        openWake()
+    }
+
+    private fun openWake() {
+        runCatching {
+            startActivity(Intent(this, WakeActivity::class.java)
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+        }.onFailure { Crash.save(this, "Sveglia", "Opening the wake screen", it) }
     }
 
     private fun dawn(id: Int) {
@@ -81,6 +90,7 @@ class RingService : Service() {
     private fun ring(id: Int) {
         if (Live.phase != Live.Phase.DAWN || Live.id != id) Live.begin(Live.Phase.RING, id, System.currentTimeMillis(), System.currentTimeMillis())
         Live.phase = Live.Phase.RING
+        openWake()
         if (Live.morning.isEmpty()) morning()
         Live.changed()
         sound(Alarms.get(this, id)?.sound)
