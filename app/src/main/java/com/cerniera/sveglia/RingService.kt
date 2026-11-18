@@ -155,7 +155,12 @@ class RingService : Service() {
         player = null
         runCatching { vibrator?.cancel() }
         if (id >= 0) { if (snooze) Alarms.snooze(this, id) else Alarms.rang(this, id, Live.ringAt) }
-        Live.end(snoozed = snooze)
+        // Mattina: a stopped alarm (not a snooze, not a skipped dawn) leaves the morning on screen
+        if (!snooze && Live.phase == Live.Phase.RING && Mattina.enabled(this)) {
+            Live.mattina(System.currentTimeMillis() + Live.MATTINA_MS)
+            val app = applicationContext
+            Thread { runCatching { Live.page = Mattina.gather(app); Live.changed() } }.start()
+        } else Live.end(snoozed = snooze)
         stopForeground(STOP_FOREGROUND_REMOVE)
         stopSelf()
     }
@@ -179,7 +184,11 @@ class RingService : Service() {
 
 /** What is happening now, shared between the service and the wake screen. */
 object Live {
-    enum class Phase { IDLE, DAWN, RING }
+    /** MORNING: the alarm has been stopped and Mattina puts the morning together under the time. */
+    enum class Phase { IDLE, DAWN, RING, MORNING }
+
+    /** How long Mattina stays without a touch. */
+    const val MATTINA_MS = 3 * 60_000L
 
     @Volatile var phase = Phase.IDLE
     @Volatile var id = -1
@@ -190,18 +199,23 @@ object Live {
     @Volatile var morning = ""
     /** Added to the clock to find the sky drawn: 0 for a real alarm; a preview shows its alarm's sky. */
     @Volatile var skyOffset = 0L
+    /** Mattina's page once gathered, and when it leaves by itself. */
+    @Volatile var page: Mattina.Page? = null
+    @Volatile var morningUntil = 0L
     private val listeners = mutableSetOf<() -> Unit>()
 
     fun begin(p: Phase, id: Int, dawnStart: Long, ringAt: Long) {
-        phase = p; this.id = id; this.dawnStart = dawnStart; this.ringAt = ringAt; snoozed = false; skyOffset = 0L; morning = ""
+        phase = p; this.id = id; this.dawnStart = dawnStart; this.ringAt = ringAt; snoozed = false; skyOffset = 0L; morning = ""; page = null
         changed()
     }
 
-    fun end(snoozed: Boolean) { phase = Phase.IDLE; this.snoozed = snoozed; changed(); id = -1 }
+    fun mattina(until: Long) { phase = Phase.MORNING; morningUntil = until; snoozed = false; page = null; skyOffset = 0L; changed(); id = -1 }
+
+    fun end(snoozed: Boolean) { phase = Phase.IDLE; page = null; this.snoozed = snoozed; changed(); id = -1 }
 
     /** 0 at the start of the dawn, 1 at the alarm's time. */
     fun progress(now: Long = System.currentTimeMillis()): Float = when (phase) {
-        Phase.RING -> 1f
+        Phase.RING, Phase.MORNING -> 1f
         Phase.DAWN -> if (ringAt <= dawnStart) 1f else ((now - dawnStart).toFloat() / (ringAt - dawnStart)).coerceIn(0f, 1f)
         Phase.IDLE -> 0f
     }

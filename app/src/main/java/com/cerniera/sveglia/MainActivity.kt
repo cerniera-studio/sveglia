@@ -160,6 +160,8 @@ class MainActivity : Activity() {
             Toggle(this, Morning.showEvent(this)) { on -> Morning.setEvent(this, on); render() }))
         m.row(Row(this, "Rain and temperature", "For ${Daylight.place.name}, from Open-Meteo, beside the event",
             Toggle(this, Morning.showWeather(this)) { on -> Morning.setWeather(this, on) }))
+        m.row(Row(this, "Mattina", "Once you stop the alarm, the morning stays under the time for a few minutes: your first event, the rain (from Cielo when it shares it), the light, and one line for the day. A tap closes it",
+            Toggle(this, Mattina.enabled(this)) { on -> Mattina.setEnabled(this, on) }))
         s.add(m)
 
         // The bedside

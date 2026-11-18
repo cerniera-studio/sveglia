@@ -26,7 +26,7 @@ import kotlin.math.roundToInt
  * And the evening before: if tomorrow starts early and no alarm covers it, the app suggests one.
  */
 object Morning {
-    class Event(val title: String, val start: ZonedDateTime)
+    class Event(val title: String, val start: ZonedDateTime, val where: String? = null)
 
     private val HHMM = DateTimeFormatter.ofPattern("HH:mm")
     private fun prefs(c: Context) = c.getSharedPreferences("morning", Context.MODE_PRIVATE)
@@ -44,7 +44,8 @@ object Morning {
             ContentUris.appendId(it, from.toInstant().toEpochMilli()); ContentUris.appendId(it, until.toInstant().toEpochMilli())
         }.build()
         val cols = arrayOf(CalendarContract.Instances.TITLE, CalendarContract.Instances.BEGIN, CalendarContract.Instances.ALL_DAY,
-            CalendarContract.Instances.STATUS, CalendarContract.Instances.SELF_ATTENDEE_STATUS, CalendarContract.Instances.VISIBLE)
+            CalendarContract.Instances.STATUS, CalendarContract.Instances.SELF_ATTENDEE_STATUS, CalendarContract.Instances.VISIBLE,
+            CalendarContract.Instances.EVENT_LOCATION)
         return runCatching {
             c.contentResolver.query(uri, cols, null, null, "${CalendarContract.Instances.BEGIN} ASC")?.use { cur ->
                 while (cur.moveToNext()) {
@@ -55,7 +56,7 @@ object Morning {
                     if (cur.getInt(5) == 0) continue
                     if (begin < from.toInstant().toEpochMilli()) continue
                     val title = cur.getString(0)?.trim().takeUnless { it.isNullOrEmpty() } ?: "An event"
-                    return@use Event(title, Instant.ofEpochMilli(begin).atZone(from.zone))
+                    return@use Event(title, Instant.ofEpochMilli(begin).atZone(from.zone), cur.getString(6)?.trim()?.ifEmpty { null })
                 }
                 null
             }

@@ -49,6 +49,10 @@ class ClockView(ctx: Context) : View(ctx) {
     var skyAt = 0L
         set(v) { field = v; invalidate() }
 
+    /** The time's ink as last drawn, so Mattina's page reads on the same sky. */
+    var inkNow = 0xFFF6F1E6.toInt()
+        private set
+
     private val p = Paint(Paint.ANTI_ALIAS_FLAG)
     private val fmt = DateTimeFormatter.ofPattern("HH:mm")
     private var startedAt = System.currentTimeMillis()
@@ -139,6 +143,7 @@ class ClockView(ctx: Context) : View(ctx) {
         // time warms from ivory towards ember and dims a little, fully so once the sun is 12° down.
         val dusk = if (dawn == 0f && skyAt == 0L) Daylight.dusk(System.currentTimeMillis()) else 0f
         val ink = if (lum > 0.45f) 0xFF1D1B19.toInt() else blend(0xFFF6F1E6.toInt(), 0xFFE3A05E.toInt(), 0.75f * dusk)
+        inkNow = ink
         val drift = ((System.currentTimeMillis() - startedAt) / 60_000L).toInt()
         val dx = context.px(((drift * 7) % 17) - 8).toFloat()
         val dy = context.px(((drift * 5) % 13) - 6).toFloat()
