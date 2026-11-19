@@ -89,7 +89,9 @@ jobs:
           path: |
             shot-*.png
             shapes.txt
+            windows.txt
             app-log.txt
+            app-log-windows.txt
 
       - name: Attach screenshots to the release
         if: always()
@@ -100,4 +102,6 @@ jobs:
           files: |
             shot-*.png
             shapes.txt
+            windows.txt
             app-log.txt
+            app-log-windows.txt

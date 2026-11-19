@@ -65,3 +65,10 @@ adb shell "cmd uimode night yes"
 adb logcat -d > app-log.txt
 if crashed; then echo "::error::Sveglia crashed"; grep -A20 "FATAL EXCEPTION" app-log.txt | head -40; exit 1; fi
 echo "No crash"
+
+# Pop-up windows, resizing and continuity (19 Nov 2026). It reboots the emulator to turn pop-up
+# windows on, so it runs last and keeps its own log.
+bash tools/windows.sh
+adb logcat -d > app-log-windows.txt
+if grep -A2 "FATAL EXCEPTION" app-log-windows.txt | grep -q "Process: $PKG"; then echo "::error::Sveglia crashed in the windows test"; grep -A20 "FATAL EXCEPTION" app-log-windows.txt | head -40; exit 1; fi
+if grep -q "^::error::" windows.txt; then echo "::error::The windows test failed"; exit 1; fi
