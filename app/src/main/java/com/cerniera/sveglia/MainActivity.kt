@@ -52,7 +52,13 @@ class MainActivity : Activity() {
         render()
         // For the emulator walk-through: open straight into the dawn preview or the bedside clock
         when (intent?.getStringExtra("open")) {
-            "preview" -> startForegroundService(Intent(this, RingService::class.java).setAction(RingService.PREVIEW))
+            "preview" -> {
+                // Tests only, debug builds: --es bounds l,t,r,b opens the wake screen in a pop-up window
+                if ((applicationInfo.flags and android.content.pm.ApplicationInfo.FLAG_DEBUGGABLE) != 0)
+                    RingService.launchBounds = intent.getStringExtra("bounds")?.split(",")?.mapNotNull { it.trim().toIntOrNull() }
+                        ?.takeIf { it.size == 4 }?.let { android.graphics.Rect(it[0], it[1], it[2], it[3]) }
+                startForegroundService(Intent(this, RingService::class.java).setAction(RingService.PREVIEW))
+            }
             "bedside" -> {
                 // Tests choose the screen saver's style: --es night SKY
                 intent.getStringExtra("night")?.let { st -> runCatching { Night.setStyle(this, Night.Style.valueOf(st)) } }

@@ -75,8 +75,11 @@ class RingService : Service() {
 
     private fun openWake() {
         runCatching {
+            // Tests only: a pop-up window at the bounds the preview asked for (see launchBounds)
+            val opts = launchBounds?.let { android.app.ActivityOptions.makeBasic().setLaunchBounds(it).toBundle() }
+            launchBounds = null
             startActivity(Intent(this, WakeActivity::class.java)
-                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT))
+                .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT), opts)
         }.onFailure { Crash.save(this, "Sveglia", "Opening the wake screen", it) }
     }
 
@@ -173,6 +176,12 @@ class RingService : Service() {
     }
 
     companion object {
+        /**
+         * Tests only (debug builds, set from MainActivity's `--es bounds l,t,r,b`): open the
+         * preview's wake screen in a pop-up window at these bounds, so the emulator can resize it
+         * mid-dawn (adaptive quality, 19 Nov 2026). Used once, then cleared.
+         */
+        @Volatile var launchBounds: android.graphics.Rect? = null
         const val CHANNEL = "alarm"
         const val STOP = "com.cerniera.sveglia.STOP"
         const val SNOOZE = "com.cerniera.sveglia.SNOOZE"
