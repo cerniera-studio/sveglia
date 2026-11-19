@@ -70,8 +70,9 @@ class ClockView(ctx: Context) : View(ctx) {
         val w = width.toFloat(); val h = height.toFloat()
         val top = Dawn.topAt(dawn); val horizon = Dawn.horizonAt(dawn)
         val wide = Hinge.unfolded(context)
-        // The main screen turned: the crease across the middle is the horizon
-        val crease = wide && w > h
+        // The main screen turned: the crease across the middle is the horizon. Not in split screen
+        // or a pop-up window: there the crease is at the window's edge, not across its middle.
+        val crease = wide && w > h && (context as? android.app.Activity)?.isInMultiWindowMode != true
         val ground = if (crease) h / 2f else h
         if (seeThrough) { drawTime(c, w, h, crease, 0f); return }
         p.shader = LinearGradient(0f, 0f, 0f, ground, top, horizon, Shader.TileMode.CLAMP)

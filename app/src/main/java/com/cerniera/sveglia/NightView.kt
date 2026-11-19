@@ -99,7 +99,7 @@ class NightView(ctx: Context) : View(ctx) {
         val w = width.toFloat(); val h = height.toFloat()
         val now = System.currentTimeMillis()
         val t = (now - born) / 1000f
-        val crease = Hinge.unfolded(context) && w > h
+        val crease = Hinge.unfolded(context) && w > h && (context as? android.app.Activity)?.isInMultiWindowMode != true
         val alt = Daylight.altitude(now)
         val sun = Heavens.sun(Daylight.place, Instant.ofEpochMilli(now))
 
