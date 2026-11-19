@@ -51,4 +51,6 @@ android {
 
 dependencies {
     implementation(project(":kit"))
+    // Mattina's rules are tested on the JVM: gradle :app:testDebugUnitTest
+    testImplementation("junit:junit:4.13.2")
 }

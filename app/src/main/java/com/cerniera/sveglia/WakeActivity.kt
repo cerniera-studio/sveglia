@@ -29,6 +29,7 @@ import java.time.format.DateTimeFormatter
  */
 class WakeActivity : Activity(), Hinge.Listener {
     private lateinit var clock: ClockView
+    private lateinit var mattina: MattinaView
     private lateinit var controls: LinearLayout
     private lateinit var snoozeBtn: View
     private lateinit var stopBtn: android.widget.TextView
@@ -65,8 +66,14 @@ class WakeActivity : Activity(), Hinge.Listener {
         controls.addView(snoozeBtn, LinearLayout.LayoutParams(-2, -2).apply { marginEnd = px(12) })
         controls.addView(stopBtn)
 
+        mattina = MattinaView(this).apply { alpha = 0f }
         setContentView(FrameLayout(this).apply {
             addView(clock, FrameLayout.LayoutParams(-1, -1))
+            addView(mattina, FrameLayout.LayoutParams(-1, -1))
+            setOnApplyWindowInsetsListener { v, insets ->
+                mattina.bottomInset = insets.getInsets(WindowInsets.Type.systemBars()).bottom
+                v.onApplyWindowInsets(insets)
+            }
             addView(controls, FrameLayout.LayoutParams(-2, -2, Gravity.BOTTOM or Gravity.CENTER_HORIZONTAL).apply { bottomMargin = px(56) })
         })
         // The sky runs behind transparent bars. Hiding them would make Android's one-time
@@ -101,6 +108,7 @@ class WakeActivity : Activity(), Hinge.Listener {
 
     private fun update() {
         if (Live.phase == Live.Phase.IDLE) { if (shared) SharedDawn.send(this, -1f); finish(); return }
+        if (Live.phase == Live.Phase.MORNING) { morning(); return }
         val p = Live.progress()
         if (shared) SharedDawn.send(this, p)
         clock.skyAt = Live.skyAt()
@@ -119,8 +127,33 @@ class WakeActivity : Activity(), Hinge.Listener {
         if (Live.phase == Live.Phase.RING && controls.alpha < 1f) controls.animate().alpha(1f).setDuration(Kit.SETTLE).start()
     }
 
+    /** Mattina: the morning under the time, until a touch, Back, or three quiet minutes. */
+    private fun morning() {
+        if (System.currentTimeMillis() > Live.morningUntil) { Live.end(snoozed = false); return }
+        if (shared) SharedDawn.send(this, 1f)
+        clock.skyAt = 0L
+        clock.dawn = 1f
+        clock.breathing = false
+        clock.caption = java.time.LocalDate.now().format(DateTimeFormatter.ofPattern("EEEE d MMMM", java.util.Locale.UK))
+        controls.visibility = View.GONE
+        window.attributes = window.attributes.apply { screenBrightness = Dawn.brightness(1f) }
+        mattina.ink = clock.inkNow
+        val p = Live.page
+        if (p != null && mattina.page !== p) {
+            mattina.page = p
+            mattina.animate().alpha(1f).setDuration(Kit.SETTLE).start()
+        }
+    }
+
+    @Deprecated("Back closes Mattina")
+    override fun onBackPressed() {
+        if (Live.phase == Live.Phase.MORNING) { Live.end(snoozed = false); return }
+        @Suppress("DEPRECATION") super.onBackPressed()
+    }
+
     private fun tapped() {
         when (Live.phase) {
+            Live.Phase.MORNING -> Live.end(snoozed = false)
             Live.Phase.RING -> RingService.send(this, RingService.SNOOZE)
             else -> {
                 controls.animate().alpha(1f).setDuration(Kit.QUICK).start()
@@ -130,13 +163,16 @@ class WakeActivity : Activity(), Hinge.Listener {
     }
 
     /** Folding or unfolding stops it: from the hinge sensor, or from the screen changing. */
-    override fun onFold(opened: Boolean, fast: Boolean) { if (Live.phase != Live.Phase.IDLE) RingService.send(this, RingService.STOP) }
+    override fun onFold(opened: Boolean, fast: Boolean) { if (ringing()) RingService.send(this, RingService.STOP) }
+
+    /** The fold stops the dawn or the ring; once Mattina is showing it only moves the page to the other screen. */
+    private fun ringing() = Live.phase == Live.Phase.DAWN || Live.phase == Live.Phase.RING
 
     override fun onConfigurationChanged(c: Configuration) {
         super.onConfigurationChanged(c)
         val nowWide = Hinge.unfolded(this)
-        if (nowWide != wide && Live.phase != Live.Phase.IDLE) RingService.send(this, RingService.STOP)
+        if (nowWide != wide && ringing()) RingService.send(this, RingService.STOP)
         wide = nowWide
-        clock.invalidate()
+        clock.invalidate(); mattina.invalidate()
     }
 }

@@ -26,7 +26,7 @@ import kotlin.math.roundToInt
  * And the evening before: if tomorrow starts early and no alarm covers it, the app suggests one.
  */
 object Morning {
-    class Event(val title: String, val start: ZonedDateTime)
+    class Event(val title: String, val start: ZonedDateTime, val where: String? = null)
 
     private val HHMM = DateTimeFormatter.ofPattern("HH:mm")
     private fun prefs(c: Context) = c.getSharedPreferences("morning", Context.MODE_PRIVATE)
@@ -44,7 +44,8 @@ object Morning {
             ContentUris.appendId(it, from.toInstant().toEpochMilli()); ContentUris.appendId(it, until.toInstant().toEpochMilli())
         }.build()
         val cols = arrayOf(CalendarContract.Instances.TITLE, CalendarContract.Instances.BEGIN, CalendarContract.Instances.ALL_DAY,
-            CalendarContract.Instances.STATUS, CalendarContract.Instances.SELF_ATTENDEE_STATUS, CalendarContract.Instances.VISIBLE)
+            CalendarContract.Instances.STATUS, CalendarContract.Instances.SELF_ATTENDEE_STATUS, CalendarContract.Instances.VISIBLE,
+            CalendarContract.Instances.EVENT_LOCATION)
         return runCatching {
             c.contentResolver.query(uri, cols, null, null, "${CalendarContract.Instances.BEGIN} ASC")?.use { cur ->
                 while (cur.moveToNext()) {
@@ -55,7 +56,7 @@ object Morning {
                     if (cur.getInt(5) == 0) continue
                     if (begin < from.toInstant().toEpochMilli()) continue
                     val title = cur.getString(0)?.trim().takeUnless { it.isNullOrEmpty() } ?: "An event"
-                    return@use Event(title, Instant.ofEpochMilli(begin).atZone(from.zone))
+                    return@use Event(title, Instant.ofEpochMilli(begin).atZone(from.zone), cur.getString(6)?.trim()?.ifEmpty { null })
                 }
                 null
             }
@@ -114,6 +115,16 @@ object Morning {
             else -> "Rain from " + h.times[wet].format(HHMM)
         }
         return listOfNotNull(sky, temp).joinToString(", ")
+    }
+
+    /** Today's first wet hour still to come (or now), with its chance and the temperature now; null if dry or unknown. */
+    fun nextRain(c: Context, now: ZonedDateTime = Alarm.now()): Triple<ZonedDateTime, Int, Int?>? {
+        val h = hours(c) ?: return null
+        val end = now.toLocalDate().plusDays(1).atStartOfDay(now.zone)
+        val idx = h.times.indices.filter { !h.times[it].isBefore(now.minusMinutes(59)) && h.times[it].isBefore(end) }
+        val wet = idx.firstOrNull { h.chance[it] >= 50 && h.rain[it] >= 0.1 } ?: return null
+        val temp = idx.firstOrNull()?.let { h.temp[it] }?.takeIf { !it.isNaN() }?.roundToInt()
+        return Triple(h.times[wet], h.chance[wet], temp)
     }
 
     /** The whole line for the ring, or "" when there is nothing to say. Call off the main thread. */

@@ -5,7 +5,7 @@
 #
 # For each shape: the alarm list, with the next alarm, Add an alarm and the first alarm in view at
 # rest (checked from files/layout.json, which the screen writes once laid out); the bedside clock;
-# and the dawn preview, ringing, with Snooze and Stop. Expects one alarm to have been saved.
+# and the dawn preview, ringing, with Snooze and Stop, then Mattina once it stops. Expects one alarm to have been saved.
 PKG=com.cerniera.sveglia
 
 adb shell settings put system accelerometer_rotation 0
@@ -81,6 +81,9 @@ for s in "cover-portrait 823x1920 320 0" "cover-landscape 823x1920 320 1" "main-
   adb exec-out screencap -p > "shot-shape-$name-dawn.png"
   sleep 10
   adb exec-out screencap -p > "shot-shape-$name-ringing.png"
+  # The preview stops itself after ten seconds of ringing: then Mattina puts the morning together
+  sleep 12
+  adb exec-out screencap -p > "shot-shape-$name-mattina.png"
   adb shell am force-stop $PKG; sleep 1
 done
 
