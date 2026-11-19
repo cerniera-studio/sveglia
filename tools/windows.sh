@@ -20,6 +20,8 @@ shot() { adb exec-out screencap -p > "shot-win-$1.png"; }
 # ---- Freeform on, then reboot so the system reads it
 adb shell settings put global enable_freeform_support 1
 adb shell settings put global force_resizable_activities 1
+# The wake screen's pop-up is asked for through a hidden setting (debug builds only)
+adb shell settings put global hidden_api_policy 1
 adb reboot
 adb wait-for-device
 until [ "$(adb shell getprop sys.boot_completed | tr -d '\r')" = 1 ]; do sleep 2; done

@@ -76,7 +76,13 @@ class RingService : Service() {
     private fun openWake() {
         runCatching {
             // Tests only: a pop-up window at the bounds the preview asked for (see launchBounds)
-            val opts = launchBounds?.let { android.app.ActivityOptions.makeBasic().setLaunchBounds(it).toBundle() }
+            val opts = launchBounds?.let { b ->
+                android.app.ActivityOptions.makeBasic().setLaunchBounds(b).apply {
+                    // Opened from a service there is no pop-up window to inherit, so ask for one.
+                    // A hidden setting: the test allows it (hidden_api_policy), and debug builds only get here.
+                    runCatching { javaClass.getMethod("setLaunchWindowingMode", Int::class.javaPrimitiveType).invoke(this, 5) }
+                }.toBundle()
+            }
             launchBounds = null
             startActivity(Intent(this, WakeActivity::class.java)
                 .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_NO_USER_ACTION or Intent.FLAG_ACTIVITY_REORDER_TO_FRONT), opts)
