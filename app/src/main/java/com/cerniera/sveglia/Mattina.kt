@@ -155,7 +155,9 @@ object Mattina {
     fun gather(c: Context, now: ZonedDateTime = Alarm.now()): Page {
         val first = if (Morning.showEvent(c)) Morning.todayFirst(c, now)?.let { First(it.title, it.start, it.where) } else null
         val sharing = Morning.showWeather(c) && cieloSharing(c)
-        val rain = if (sharing) cieloRain(c, now) else null
+        // Cielo's rain when it shares it; otherwise Sveglia's own forecast, so the line and the row agree
+        val own = if (Morning.showWeather(c) && !sharing) Morning.nextRain(c, now) else null
+        val rain = if (sharing) cieloRain(c, now) else own?.let { Rain(it.first, it.second / 100f, it.third?.let { t -> "$t° now" } ?: "Open-Meteo") }
         val today = rain?.takeIf { it.at.toLocalDate() == now.toLocalDate() }
         val weather = if (Morning.showWeather(c) && today == null) Morning.weatherLine(c, now) else null
         return compose(now, first, rain, weather, light(now))

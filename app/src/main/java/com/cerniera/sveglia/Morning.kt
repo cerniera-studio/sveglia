@@ -117,6 +117,16 @@ object Morning {
         return listOfNotNull(sky, temp).joinToString(", ")
     }
 
+    /** Today's first wet hour still to come (or now), with its chance and the temperature now; null if dry or unknown. */
+    fun nextRain(c: Context, now: ZonedDateTime = Alarm.now()): Triple<ZonedDateTime, Int, Int?>? {
+        val h = hours(c) ?: return null
+        val end = now.toLocalDate().plusDays(1).atStartOfDay(now.zone)
+        val idx = h.times.indices.filter { !h.times[it].isBefore(now.minusMinutes(59)) && h.times[it].isBefore(end) }
+        val wet = idx.firstOrNull { h.chance[it] >= 50 && h.rain[it] >= 0.1 } ?: return null
+        val temp = idx.firstOrNull()?.let { h.temp[it] }?.takeIf { !it.isNaN() }?.roundToInt()
+        return Triple(h.times[wet], h.chance[wet], temp)
+    }
+
     /** The whole line for the ring, or "" when there is nothing to say. Call off the main thread. */
     fun line(c: Context): String {
         val now = Alarm.now()
