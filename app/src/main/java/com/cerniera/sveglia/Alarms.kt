@@ -131,5 +131,5 @@ class AlarmReceiver : BroadcastReceiver() {
 
 /** Alarms don't survive a restart or a clock change on their own: set them again. */
 class BootReceiver : BroadcastReceiver() {
-    override fun onReceive(c: Context, i: Intent) = Alarms.schedule(c)
+    override fun onReceive(c: Context, i: Intent) { Alarms.schedule(c); Chrono.recover(c) }
 }

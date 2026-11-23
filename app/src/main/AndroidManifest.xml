@@ -77,6 +77,31 @@
 
         <receiver android:name=".AlarmReceiver" android:exported="false" />
 
+        <!-- Cronografo (23 Nov 2026): timers and the stopwatch. Other apps and assistants hand a timer over with SET_TIMER -->
+        <activity
+            android:name=".CronografoActivity"
+            android:exported="true"
+            android:label="Cronografo"
+            android:launchMode="singleTop"
+            android:windowSoftInputMode="adjustResize"
+            android:configChanges="screenSize|smallestScreenSize|screenLayout|orientation|uiMode|density">
+            <intent-filter>
+                <action android:name="android.intent.action.SET_TIMER" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            <intent-filter>
+                <action android:name="android.intent.action.SHOW_TIMERS" />
+                <category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+        </activity>
+
+        <receiver android:name=".TimerReceiver" android:exported="false" />
+
+        <service
+            android:name=".TimerRing"
+            android:exported="false"
+            android:foregroundServiceType="mediaPlayback" />
+
         <receiver android:name=".BootReceiver" android:exported="true">
             <intent-filter>
                 <action android:name="android.intent.action.BOOT_COMPLETED" />

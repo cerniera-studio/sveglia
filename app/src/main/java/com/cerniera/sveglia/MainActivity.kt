@@ -157,6 +157,22 @@ class MainActivity : Activity() {
             s.add(c)
         }
 
+        // Cronografo, Sveglia's second face: timers and the stopwatch (23 Nov 2026)
+        s.section("Cronografo")
+        val nowMs = System.currentTimeMillis()
+        val timers = Chrono.timers(this)
+        val running = timers.filter { it.running || it.ringing }
+        val watch = Chrono.watch(this)
+        val chronoSub = listOfNotNull(
+            when { running.isEmpty() -> null; running.size == 1 -> "${running[0].label.ifBlank { Chrono.words(running[0].length) }} · ${Chrono.clock(running[0].remaining(nowMs))} left"; else -> "${running.size} timers running" },
+            if (watch.running) "stopwatch at ${Chrono.clock(watch.elapsed(nowMs))}" else null,
+        ).joinToString(" · ").ifBlank { "Timers and a stopwatch as a chronograph, with a tachymeter and pulsometer" }
+        s.add(Card(this).apply {
+            row(Row(this@MainActivity, "Timers and stopwatch", chronoSub, endValue("›", if (running.isNotEmpty() || watch.running) Kit.CHAMPAGNE else Kit.MUTED)) {
+                startActivity(Intent(this@MainActivity, CronografoActivity::class.java))
+            })
+        })
+
         // The morning line at the ring
         s.section("Morning")
         val m = Card(this)
