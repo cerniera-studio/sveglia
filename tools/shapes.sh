@@ -85,6 +85,33 @@ for s in "cover-portrait 823x1920 320 0" "cover-landscape 823x1920 320 1" "main-
   sleep 12
   adb exec-out screencap -p > "shot-shape-$name-mattina.png"
   adb shell am force-stop $PKG; sleep 1
+
+  # Cronografo (23 Nov 2026): two timers running (the second in the register at 9), the stopwatch
+  # with laps, and nothing set (the drums). The dial and both pushers must sit inside the view.
+  for c in "timers running timer" "stopwatch running stopwatch" "set empty timer"; do
+    set -- $c
+    adb shell run-as $PKG rm -f files/chrono-layout.json
+    adb shell am start -S -n $PKG/.CronografoActivity --es demo "$2" --es face "$3"; sleep 5
+    adb exec-out screencap -p > "shot-shape-$name-chrono-$1.png"
+    json=$(adb shell run-as $PKG cat files/chrono-layout.json 2>/dev/null)
+    python3 - "Cronografo $1, $name" "$json" <<'PY' | tee -a shapes.txt
+import sys, json
+name = sys.argv[1]
+try: d = json.loads(sys.argv[2])
+except Exception: print(f"::error::{name}: no layout recorded"); sys.exit(0)
+vw, vh = d["view"]; ox, oy = d["origin"]; bad = []
+for k in ("dial", "pusher-top", "pusher-bottom"):
+    if k not in d["parts"]: bad.append(f"{k} not shown"); continue
+    l, t, r, b = d["parts"][k]; l -= ox; r -= ox; t -= oy; b -= oy
+    if l < 0 or t < 0 or r > vw or b > vh: bad.append(f"{k} at {[l, t, r, b]} leaves the view {vw}x{vh}")
+print(("::error::" if bad else "::notice::") + f"{name}: " + ("; ".join(bad) if bad else f"dial and pushers in view {vw}x{vh}"))
+PY
+  done
+  # Hand a timer over as an assistant would (SET_TIMER, five minutes, labelled)
+  adb shell am start -a android.intent.action.SET_TIMER --ei android.intent.extra.alarm.LENGTH 300 --es android.intent.extra.alarm.MESSAGE "Tea" -n $PKG/.CronografoActivity; sleep 4
+  adb exec-out screencap -p > "shot-shape-$name-chrono-set-timer.png"
+  adb shell am start -S -n $PKG/.CronografoActivity --es demo empty; sleep 2
+  adb shell am force-stop $PKG; sleep 1
 done
 
 adb shell settings put system user_rotation 0

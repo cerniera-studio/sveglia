@@ -26,6 +26,15 @@ adb shell input swipe 540 1900 540 500 300; sleep 1; shot home-lower
 # The four shapes, with the alarm just saved
 bash tools/shapes.sh
 
+# Cronografo: a timer runs out and rings (Campanile, the face in rosso), then Stop from the notification's service
+adb shell am start -S -n $PKG/.CronografoActivity --es demo ending; sleep 3; shot chrono-before-end
+sleep 9; shot chrono-ringing
+adb shell dumpsys notification --noredact | grep -q "com.cerniera.sveglia.*timer-end\|Time is up" && echo "::notice::Timer end notification posted" || echo "::warning::No timer end notification seen"
+adb shell am startservice -n $PKG/.TimerRing -a com.cerniera.sveglia.TIMER_STOP >/dev/null 2>&1 || adb shell am start-foreground-service -n $PKG/.TimerRing -a com.cerniera.sveglia.TIMER_STOP
+sleep 3; shot chrono-stopped
+adb shell am start -S -n $PKG/.CronografoActivity --es demo empty; sleep 2
+adb shell am force-stop $PKG
+
 # The bedside clock, in each screen-saver style (the emulator counts as charging)
 adb shell am start -n $PKG/.MainActivity --es open bedside; sleep 4; shot bedside
 adb shell input tap 540 1200; sleep 1; shot bedside-touched
